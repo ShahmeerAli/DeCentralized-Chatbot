@@ -38,17 +38,39 @@ async def revisor(state:AgentState):
     """Revise the Answer."""
     result=await llm.ainvoke(
            tools=tools,
-           SystemMessage=""
+           SystemMessage="You are a professional answer revisor."
+           "Use critique to rewrite or improve the polished version of the answer."
        )
+    return {
+        'messages':state['messages'] + [result]
+    }
       
 
 async def critique(state:AgentState):
     """Critque the answer"""
+    result=await llm.ainvoke(
+        tools=tools,
+        SystemMessage="You are a professional critique agent."
+        "Read the message and critique it to find what's missing."
+        "Suggest how the answer can be more refined,polished and sourced."
+    )
+
+    return {
+        'messages':state['messages'] + [result]
+    }
+
+
 
 async def final_answer(state:AgentState):
-    pass
+    """GIVES the final answer"""
+    result=await llm.ainvoke(
+        tools=tools,
+        SystemMessage="You are the final arbiter."
+        "Generate the answer."
+        "Do not include critique remarks only generate best polished answer."
+    )
 
-    
+
 
 
 
