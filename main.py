@@ -19,7 +19,7 @@ llm=ChatGroq(
  groq_api_key=os.environ.get("GROQAPI_KEY")
 )
 
-mcp_toolkit=MCPToolKit.from_server("tavly-mcp")
+mcp_toolkit=MCPToolkit.from_server("tavily-mcp")
 tools=mcp_toolkit.get_tools()
 
 
@@ -29,7 +29,9 @@ class AgentState(TypedDict):
 
 
 async def answer_generator(state:AgentState):
-    result=await llm.ainvoke(tools=tools)
+    result=await llm.ainvoke(messages=state["messages"],
+        tools=tools)
+    
     return{
        'messages':state['messages'] + [result]
     }
@@ -39,21 +41,22 @@ async def revisor(state:AgentState):
     """Revise the Answer."""
     result=await llm.ainvoke(
            tools=tools,
-           SystemMessage="You are a professional answer revisor."
+           messages=[SystemMessage(content="You are a professional answer revisor."
            "Use critique to rewrite or improve the polished version of the answer."
-       )
+ )]           )
     return {
         'messages':state['messages'] + [result]
     }
       
 
+
 async def critique(state:AgentState):
     """Critque the answer"""
     result=await llm.ainvoke(
         tools=tools,
-        SystemMessage="You are a professional critique agent."
+        messages=[SystemMessage(content="You are a professional critique agent."
         "Read the message and critique it to find what's missing."
-        "Suggest how the answer can be more refined,polished and sourced."
+        "Suggest how the answer can be more refined,polished and sourced.")]
     )
 
     return {
@@ -66,10 +69,38 @@ async def final_answer(state:AgentState):
     """GIVES the final answer"""
     result=await llm.ainvoke(
         tools=tools,
-        SystemMessage="You are the final arbiter."
+        messages=[SystemMessage(content="You are the final arbiter."
         "Generate the answer."
-        "Do not include critique remarks only generate best polished answer."
-    )
+        "Do not include critique remarks only generate the best polished answer.")]
+        )
+
+    return {
+        'messages':state['messages'] + [result]
+    }
+
+
+
+
+graph=StateGraph(AgentState)
+
+
+#adding the nodes
+
+
+graph.add_node("answer_generator",answer_generator)
+
+graph.add_node("revisor",revisor)
+graph.add_node("critique",critique)
+graph.add_node("final_answer",final_answer)
+
+#adding edges to connect the nodes
+
+graph.add_edge("answer_generator","revisor")
+graph.add_edge("revisor","critique")
+graph.add_edge("critique","final_answer")
+
+graph.set_entry_point("answer_generator")
+workflow=graph.compile()
 
 
 
