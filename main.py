@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph,END,add_messages
 from langchain_core.messages import AIMessage,HumanMessage,SystemMessage
 from langchain_community.tools import TavilySearchResults
 from dotenv import find_dotenv,load_dotenv
+from langchain_mcp import MCPToolkit
 from typing import Annotated,TypedDict
 
 
@@ -18,9 +19,9 @@ llm=ChatGroq(
  groq_api_key=os.environ.get("GROQAPI_KEY")
 )
 
-search_tools=TavilySearchResults()
+mcp_toolkit=MCPToolKit.from_server("tavly-mcp")
+tools=mcp_toolkit.get_tools()
 
-tools=[search_tools]
 
 class AgentState(TypedDict):
     messages:Annotated[list,add_messages]
