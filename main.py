@@ -13,8 +13,6 @@ import asyncio
 
 load_dotenv()
 
-
-
 GROQAPI_KEY=os.environ["GROQAPI_KEY"]
 
 llm=ChatGroq(
@@ -28,6 +26,7 @@ tools=[search_tools]
 
 tool_node=ToolNode(tools=tools)
 
+llm_with_tools=llm.bind_tools(tools)
 
 
 class AgentState(TypedDict):
@@ -36,7 +35,7 @@ class AgentState(TypedDict):
 
 
 async def answer_generator(state:AgentState):
-    result=await llm.ainvoke(state['messages'])
+    result=await llm_with_tools.ainvoke(state['messages'])
     
     return{
        'messages':state['messages'] + [result]
@@ -82,8 +81,6 @@ async def final_answer(state:AgentState):
     }
 
 
-
-
 graph=StateGraph(AgentState)
 
 
@@ -100,7 +97,9 @@ graph.add_node("tool",tool_node)
 
 #adding edges to connect the nodes
 
-graph.add_edge("answer_generator","revisor")
+
+graph.add_edge("answer_generator","tool")
+graph.add_edge("tool","revisor")
 graph.add_edge("revisor","critique")
 graph.add_edge("critique","final_answer")
 
@@ -110,13 +109,13 @@ workflow=graph.compile()
 async def run():
 
     response=await workflow.ainvoke({
-        'messages':[HumanMessage(content="what is tesla optimus?")]
+        'messages':[HumanMessage(content="how did charlie kirk die?")]
+
     })
+
 
 
     print(response)
 
 
 asyncio.run(run())
-
-
