@@ -42,11 +42,14 @@ async def answer_generator(state:AgentState):
     }
 
 
+
+
 async def revisor(state:AgentState):
     """Revise the Answer."""
     result=await llm.ainvoke(
            state['messages'] + [SystemMessage(content="You are a professional answer revisor."
            "Use critique to rewrite or improve the polished version of the answer."
+           "Use the tool only when you dont know the answer. "
  )]           )
     return {
         'messages':state['messages'] + [result]
@@ -65,6 +68,7 @@ async def critique(state:AgentState):
     return {
         'messages':state['messages'] + [result]
     }
+
 
 
 async def humanoid_reviewer(state:AgentState):
@@ -129,7 +133,7 @@ workflow=graph.compile()
 async def run():
 
     response=await workflow.ainvoke({
-        'messages':[HumanMessage(content="Summarize the IPhone 17 launch event.")]
+        'messages':[HumanMessage(content="Tell me about Aphasia.")]
 
     })
 
